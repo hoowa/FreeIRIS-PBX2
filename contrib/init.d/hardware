@@ -1,0 +1,63 @@
+#!/bin/sh
+# $Id$
+#
+# chkconfig: 345 80 70
+# description: hardware telephony detect
+# processname: hardware
+#
+#
+
+# Installation directory
+FRI_SBIN=/freeiris2/bin
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+if ! [ -x $FRI_SBIN/hardware ] ; then
+        echo "ERROR: $FRI_SBIN/hardware not found"
+        exit 0
+fi
+
+# Full path to hardware
+DAEMON="$FRI_SBIN/hardware --silence"
+
+start() {
+
+	# Start daemons.
+        echo -n $"Starting hardware : "
+        daemon $DAEMON
+
+	sleep 2
+
+	if [ ! -e /proc/dahdi/1 ]; then
+		modprobe ztdummy
+	fi
+
+	dahdi_cfg
+
+        echo
+        return $RETVAL
+}
+
+
+stop() {
+        # Stop daemons.
+        echo -n $"Shutting Down hardware : hardware telephony detect Nothing To do!"
+        echo
+        return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  *)
+        echo "Usage: hardware {start|stop}"
+        exit 1
+esac
+
+exit $?
