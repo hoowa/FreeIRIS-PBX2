@@ -1,0 +1,320 @@
+#!/usr/bin/perl
+#
+#       Agispeedy - The Agispeedy is an implemention of AGI in asterisk.
+#       Copyright (C) 2010, Fonoirs Co.,LTD.
+#       By Sun bing <hoowa.sun@gmail.com>
+#
+#       See http://www.freeiris.org/cn/agispeedy for more information about
+#       the Agispeedy project.
+#
+#       This program is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU General Public License as published by
+#       the Free Software Foundation; either version 2 of the License, or
+#       (at your option) any later version.
+#
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU General Public License for more details.
+#
+#       You should have received a copy of the GNU General Public License
+#       along with this program; if not, write to the Free Software
+#       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#       MA 02110-1301, USA.
+#
+#
+#=================================================================
+# basic require library
+#=================================================================
+use FindBin qw($Bin);
+use Getopt::Long qw(:config no_ignore_case bundling);
+use File::Basename;
+use Data::Dumper;
+
+#=================================================================
+# initialization preprocess
+#=================================================================
+BEGIN {
+## dim global variables
+our  $VERSION='2.1';
+our  %OPT;
+
+    $OPT{'GET_HELP'}    = '';       #boolean &opt_help()
+    $OPT{'GET_VERSION'} = '';       #boolean &opt_version()
+    $OPT{'GET_VERBOSE'} = '';       #boolean run services as level 2
+    $OPT{'GET_QUIET'}   = '';       #boolean run services as background
+    
+    $OPT{'ETC'}     = '';       #priority 1. cmd 2. default
+    $OPT{'BIN'}     = $Bin;     #agispeedy binary path
+    $OPT{'LOG'}     = '';       #priority 1. cmd 2. ETC 3. default
+    $OPT{'LIB'}     = '';       #priority 1. cmd 2. ETC 3. default
+    $OPT{'PID'}     = '';       #priority 1. cmd 2. ETC 3. default
+    $OPT{'VAR'}     = '';       #priority 1. cmd 2. ETC 3. default
+    
+    $OPT{'VERSION'} = $VERSION;     #version alias $VERSION
+    
+    $OPT{'CFG_MAINNAME'}    = fileparse($0);   # filename
+    $OPT{'CFG_MAINNAME'}    =~ s/\.(.*)//;     # clean filename
+    $OPT{'CFG_GENERAL'}     = '';   # agispeedy.conf full path
+    $OPT{'CFG_GENERAL_REF'} = '';   # agispeedy.conf hash reference
+
+    $OPT{'LEVEL'}               = 2;
+    $OPT{'LOG_FILE'}            = '';    
+    $OPT{'PORT'}                = 4573;
+    $OPT{'HOST'}                = '*';
+    $OPT{'USER'}                = 'root';
+    $OPT{'GROUP'}               = 'root';
+    $OPT{'SETSID'}              = 0;
+    $OPT{'MIN_SERVERS'}         = 6;
+    $OPT{'MIN_SPARE_SERVERS'}   = 2;
+    $OPT{'MAX_SPARE_SERVERS'}   = 12;
+    $OPT{'MAX_SERVERS'}         = 64;
+    $OPT{'MAX_REQUESTS'}        = 512;
+
+    $OPT{'AGIMOD_ENABLE_DYNAMIC'} = 1;
+    $OPT{'AGIMOD_ENABLE_STATIC'} = 1;
+    $OPT{'AGIMOD_DYNAMIC_EXT'} = 'dam';
+    $OPT{'AGIMOD_STATIC_EXT'} = 'sam';
+
+    # get argv options
+my  $GetOptionsResult = GetOptions(
+            'help|?|h'=>\$OPT{'GET_HELP'},
+            'version|V'=>\$OPT{'GET_VERSION'},
+            'verbose|v'=>\$OPT{'GET_VERBOSE'},
+            'quiet|q'=>\$OPT{'GET_QUIET'},
+            'config|c=s'=>\$OPT{'ETC'},
+            'log|L=s'=>\$OPT{'LOG'},
+            'lib|l=s'=>\$OPT{'LIB'},
+            'pid|P=s'=>\$OPT{'PID'},
+            'var|a=s'=>\$OPT{'VAR'},            
+        );
+    if (!$GetOptionsResult) {
+        exit;
+    }
+
+    # user argv options
+    if ($OPT{'GET_HELP'} || (!$OPT{'GET_VERSION'} && !$OPT{'GET_VERBOSE'} && !$OPT{'GET_QUIET'})) {
+
+        print   "Agispeedy version $VERSION\n".
+                "Copyright (C) 2010, Fonoirs Co.,LTD.\n".
+                "By Sun bing <hoowa.sun\@gmail.com>\n".
+                "This is free software, and you are welcome to modify and redistribute it\n".
+                "under the GPL version 2 license.\n".
+                "This software comes with ABSOLUTELY NO WARRANTY.\n".
+                "\n".
+                "Usage: $0 [options]\n".
+                "  -?, --help          Display this help and exit.\n".
+                "  -V, --version       Output version information and exit.\n".
+                "  -v, --verbose       Display more messages on screen(log level 4).\n".
+                "  -q, --quiet         Start Agispeedy as background.\n".
+                "  -c, --config=path   Specify Config files directory.  \n".
+                "  -L, --log=path      Specify Log files directory.\n".
+                "  -l, --lib=lib       Specify Agispeedy include directory.\n".
+                "  -P, --pid=path      Specify pid file directory.\n".
+                "  -a, --var=path      Specify Agispeedy script modules directory.\n";
+        exit;
+
+    } elsif ($OPT{'GET_VERSION'}) {
+
+        print "Agispeedy version $VERSION\n";
+        exit;
+
+    } elsif ($OPT{'GET_VERBOSE'} && $OPT{'GET_QUIET'}) {
+        
+        print "Your may set run Agispeedy services as verbose or quiet.\n";
+        exit;
+    }
+
+
+    #=================================================================
+    # load agispeedy default variables
+    #=================================================================
+   
+    #------------------------------------------------------------------
+    # find where is agispeedy.conf and load it
+    #------------------------------------------------------------------
+    if ($OPT{'ETC'} && -e"$OPT{'ETC'}/agispeedy.conf") {
+        $OPT{'CFG_GENERAL'} = $OPT{'ETC'}."/agispeedy.conf";
+    } elsif (-e"/etc/freeiris/agispeedy.conf") {
+        $OPT{'ETC'} = "/etc/freeiris/";
+        $OPT{'CFG_GENERAL'} = $OPT{'ETC'}."agispeedy.conf";
+    } elsif (-e"/etc/agispeedy/agispeedy.conf") {
+        $OPT{'ETC'} = "/etc/agispeedy/";
+        $OPT{'CFG_GENERAL'} = $OPT{'ETC'}."agispeedy.conf";
+    } elsif (-e"/freeiris/etc/agispeedy.conf") {
+        $OPT{'ETC'} = "/freeiris/etc/";
+        $OPT{'CFG_GENERAL'} = $OPT{'ETC'}."agispeedy.conf";
+    } elsif (-e"/usr/local/etc/agispeedy/agispeedy.conf") {
+        $OPT{'ETC'} = "/usr/local/etc/agispeedy/";
+        $OPT{'CFG_GENERAL'} = $OPT{'ETC'}."agispeedy.conf";
+    } else {
+        warn "ERROR [".__LINE__."] : Not Found agispeedy.conf config files, your may specify --config=[path] !\n";
+        exit;
+    }
+    $OPT{'CFG_GENERAL_REF'}=&config_parse($OPT{'CFG_GENERAL'});
+    
+
+    #------------------------------------------------------------------
+    # load options from argv and config files
+    #------------------------------------------------------------------
+    if ($OPT{'PID'} && -d$OPT{'PID'}) {
+    } elsif (-d$OPT{'CFG_GENERAL_REF'}->{'general'}{'pid_path'}) {
+        $OPT{'PID'} = $OPT{'CFG_GENERAL_REF'}->{'general'}{'pid_path'};
+    } else {
+        warn "ERROR [".__LINE__."] : Not Found pid_path directory, your may specify --pid=[path] !\n";
+        exit;
+    }
+    if ($OPT{'LIB'} && -d$OPT{'LIB'}) {
+    } elsif (-d$OPT{'CFG_GENERAL_REF'}->{'general'}{'lib_path'}) {
+        $OPT{'LIB'} = $OPT{'CFG_GENERAL_REF'}->{'general'}{'lib_path'};
+    } else {
+        warn "ERROR [".__LINE__."] : Not Found lib_path directory, your may specify --lib=[path] !\n";
+        exit;
+    }
+    if ($OPT{'LOG'} && -d$OPT{'LOG'}) {
+    } elsif (-d$OPT{'CFG_GENERAL_REF'}->{'general'}{'log_path'}) {
+        $OPT{'LOG'} = $OPT{'CFG_GENERAL_REF'}->{'general'}{'log_path'};
+    } else {
+        warn "ERROR [".__LINE__."] : Not Found log_path directory, your may specify --log=[path] !\n";
+        exit;
+    }
+    if ($OPT{'VAR'} && -d$OPT{'VAR'}) {
+    } elsif (-d$OPT{'CFG_GENERAL_REF'}->{'general'}{'var_path'}) {
+        $OPT{'VAR'} = $OPT{'CFG_GENERAL_REF'}->{'general'}{'var_path'};
+    } else {
+        warn "ERROR [".__LINE__."] : Not Found var_path directory, your may specify --var=[path] !\n";
+        exit;
+    }    
+    if ($OPT{'GET_QUIET'}) {
+        $OPT{'SETSID'} = 1;
+        # log to file enable ?
+        if (defined$OPT{'CFG_GENERAL_REF'}{'log'}{'enable'} && $OPT{'CFG_GENERAL_REF'}{'log'}{'enable'} eq 'yes') {
+            $OPT{'LOG_FILE'} = $OPT{'LOG'}.'/'.$OPT{'CFG_MAINNAME'}.'.log';
+            $OPT{'LEVEL'} = $OPT{'CFG_GENERAL_REF'}{'log'}{'level'};
+        }
+    } elsif ($OPT{'GET_VERBOSE'}) {
+        $OPT{'SETSID'} = 0;
+        $OPT{'LEVEL'} = 4;
+    }
+ 
+    #------------------------------------------------------------------
+    # followed config load only from agispeedy.conf
+    #------------------------------------------------------------------
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'port'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'port'} ne '') {
+        $OPT{'PORT'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'port'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'host'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'host'} ne '') {
+        $OPT{'HOST'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'host'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'user'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'user'} ne '') {
+        $OPT{'USER'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'user'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'group'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'group'} ne '') {
+        $OPT{'GROUP'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'group'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'min_servers'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'min_servers'} ne '') {
+        $OPT{'MIN_SERVERS'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'min_servers'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'min_spare_servers'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'min_spare_servers'} ne '') {
+        $OPT{'MIN_SPARE_SERVERS'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'min_spare_servers'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'max_spare_servers'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'max_spare_servers'} ne '') {
+        $OPT{'MAX_SPARE_SERVERS'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'max_spare_servers'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'max_servers'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'max_servers'} ne '') {
+        $OPT{'MAX_SERVERS'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'max_servers'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'max_requests'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'max_requests'} ne '') {
+        $OPT{'MAX_REQUESTS'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'max_requests'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'services'}{'max_requests'} && $OPT{'CFG_GENERAL_REF'}{'services'}{'max_requests'} ne '') {
+        $OPT{'MAX_REQUESTS'} = $OPT{'CFG_GENERAL_REF'}{'services'}{'max_requests'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'dynamic_ext'} && $OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'dynamic_ext'} ne '') {
+        $OPT{'AGIMOD_DYNAMIC_EXT'} = $OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'dynamic_ext'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'static_ext'} && $OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'static_ext'} ne '') {
+        $OPT{'AGIMOD_STATIC_EXT'} = $OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'static_ext'};
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'enable_dynamic'} && $OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'enable_dynamic'} eq 'yes') {
+        $OPT{'AGIMOD_ENABLE_DYNAMIC'} = 1;
+    } else {
+        $OPT{'AGIMOD_ENABLE_DYNAMIC'} = 0;
+    }
+    if (defined$OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'enable_static'} && $OPT{'CFG_GENERAL_REF'}{'agispeedymodules'}{'enable_static'} eq 'yes') {
+        $OPT{'AGIMOD_ENABLE_STATIC'} = 1;
+    } else {
+        $OPT{'AGIMOD_ENABLE_STATIC'} = 0;
+    }
+
+    # config_parse function
+    sub config_parse()
+    {
+    my	(%CONFIG,$last_section);
+        open(CONF,"$_[0]") or die "ERROR [".__LINE__."] : Can't Open $_[0] $!";
+        while (<CONF>) {
+            # trim 
+            chomp($_);
+            $_ =~ s/[\;|\#](.*)//;
+            
+            # space line
+            next if ($_ eq '');
+            
+            # current line is section
+            if ($_ =~ /\[(.+)\]/) {
+                $last_section=$1;
+                chomp($last_section);
+                $last_section =~ s/^\s+//;
+                $last_section =~ s/\s+$//;
+                $CONFIG{$last_section}={};
+                next;
+            } elsif ($_ =~ /=/) {
+            my  ($key,$value)=split(/\=/,$_);
+                chomp($key);
+                $key =~ s/^\s+//;
+                $key =~ s/\s+$//;
+                chomp($value);
+                $value =~ s/^\s+//;
+                $value =~ s/\s+$//;
+                $CONFIG{$last_section}{$key}=$value;
+            }
+        }
+        close(CONF);
+
+        return(\%CONFIG);
+    }
+    
+    # end of BEGIN Block
+};
+
+#=================================================================
+# initialization construction
+#=================================================================
+use lib "$OPT{'LIB'}/internal/";
+use lib "$OPT{'LIB'}/";
+use base qw(Net::Server::PreFork);
+use Time::HiRes qw( gettimeofday );
+use DBI;
+use Asterisk::AGI;
+use strict;
+no strict "refs";
+use vars qw( $VERSION %OPT @ISA );
+use warnings;
+our @ISA = qw(Net::Server::PreFork);
+
+# load utils module
+eval {
+    require "$OPT{'LIB'}/agispeedy_utils.pm";
+} or die "ERROR [".__LINE__."] : Failed to load $OPT{'LIB'}/agispeedy_utils.pm !\n";
+# load hooks module
+eval {
+    require "$OPT{'LIB'}/agispeedy_hooks.pm";
+} or die "ERROR [".__LINE__."] : Failed to load $OPT{'LIB'}/agispeedy_hooks.pm !\n";
+
+
+#running services...
+__PACKAGE__->run();
+
+
+
+exit;

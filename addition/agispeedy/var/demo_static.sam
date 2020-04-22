@@ -1,0 +1,47 @@
+#
+#       Agispeedy - The Agispeedy is an implemention of AGI in asterisk.
+#       Copyright (C) 2010, Fonoirs Co.,LTD.
+#       By Sun bing <hoowa.sun@gmail.com>
+#
+#       See http://www.freeiris.org/cn/agispeedy for more information about
+#       the Agispeedy project.
+#
+#       This program is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU General Public License as published by
+#       the Free Software Foundation; either version 2 of the License, or
+#       (at your option) any later version.
+#
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU General Public License for more details.
+#
+#       You should have received a copy of the GNU General Public License
+#       along with this program; if not, write to the Free Software
+#       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#       MA 02110-1301, USA.
+#
+#       this file is agispeedy static module demo
+#
+#
+#   your agi entry function name must like filename
+#   demo_static.sam's entry function name is demo_static
+#
+#   if your want to have your private function , i suggest named with prefix
+#   _demo_static_xxxx
+#
+#   write to your extensions.conf:
+#   exten => _X.,1,AGI(agi://127.0.0.1/demo_static)
+#
+sub demo_static
+{
+my  $self = shift;
+my  $server_prop = $self->{server};
+my  $AGI = $server_prop->{agi};
+my  $PARAMS = $AGI->{params};
+
+    $AGI->say_digits('123456');
+
+return(1);
+}
+

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+ulimit -n 65535
+
+perl ./amips.pl --verbose
+

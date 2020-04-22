@@ -1,0 +1,22 @@
+************************************************************************
+*                                                                      *
+*            Welcome to AQL (Astconf Query Language) Project           *
+*                                                                      *
+************************************************************************
+
+
+
+About
+-----
+
+AQL (Astconf Query Language) is SQL-like statments to easy write and 
+read asterisk config files library for PHP
+
+Installs
+----
+
+please access http://www.freeiris.org/astconfquerylanguage
+
+for install and all docs.
+
+sun bing <hoowa.sun@freeiris.org>

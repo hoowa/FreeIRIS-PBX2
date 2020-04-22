@@ -1,0 +1,103 @@
+#!/bin/sh
+# agispeedy    Starts, Stops and Reloads Agispeedy.
+#
+# chkconfig: 2345 95 20
+# description: Agispeedy is an implemention of AGI improves performance.
+# processname: agispeedy
+#
+
+# Use this option to specify a different configuration directory
+ASPY_CONFIG=/etc/agispeedy
+
+# Installation directory
+ASPY_SBIN=/agispeedy/bin
+
+# Pid file
+PIDFILE=/agispeedy/log/agispeedy.pid
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+if ! [ -x $ASPY_SBIN/agispeedy ] ; then
+	echo "ERROR: $ASPY_SBIN/agispeedy not found"
+	exit 0
+fi
+
+if ! [ -d $ASPY_CONFIG ] ; then
+	echo "ERROR: $ASPY_CONFIG directory not found"
+	exit 0
+fi
+
+# Full path to agispeedy entry file
+DAEMON=$ASPY_SBIN/agispeedy
+
+RETVAL=0
+
+start() {
+	# Check if Agispeedy is already running.
+	#VERSION=` --version`
+	#if [ "`echo $VERSION | cut -c 1-8`" = "Asterisk" ]; then
+	#	echo "Asterisk is already running."
+	#	exit 1
+	#fi
+
+	#check exists pid
+	if [ -f ${PIDFILE} ]
+	  then PID=`cat ${PIDFILE}`
+	       if [ "X${PID}" != "X" ]
+	       then dpflag=`ps ax|awk '{print $1}'|grep ${PID}`
+		    if [ "X${dpflag}" != "X" ]
+		    then
+	              echo "agispeedy is already running at pid ${dpflag}."
+	              exit 1
+		    fi
+	       fi
+	 fi
+
+
+	# Start daemons.
+	echo -n $"Starting agispeedy: "
+    ASPYARGS="-q"
+    if [ $ASPY_CONFIG ]; then
+		ASPYARGS="$ASPYARGS -c $ASPY_CONFIG"
+	fi
+	daemon $DAEMON $ASPYARGS
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/agispeedy
+	echo
+	return $RETVAL
+}
+
+stop() {
+	# Stop daemons.
+	echo -n $"Shutting down agispeedy: "
+	killproc `basename $DAEMON`
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/agispeedy
+	echo
+	return $RETVAL
+}
+
+restart() {
+	stop
+    sleep 1
+	start
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart)
+	restart
+	;;
+  *)
+	echo "Usage: agispeedy {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

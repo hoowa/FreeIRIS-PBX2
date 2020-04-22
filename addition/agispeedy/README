@@ -1,0 +1,31 @@
+******************************************************************************
+*                                                                            *
+*                   Welcome to FreeIris2 Project                             *
+*                                                                            *
+******************************************************************************
+
+
+
+About
+-----
+
+The Agispeedy is an implemention of AGI in asterisk. it inconceivable faster 
+than normal agi about 1000%, and improves performance. 
+
+Agispeedy Features: 
+
+■implemention of AGI(FastAGI) over TCP Sockets
+■Work in Stabilize Perfork Mode and Written by Pure Perl.
+■Easy to Maintain Than FastAGI(Dynamic Load AGI No NEED Restart Agispeedy Services)
+■Allow running AGI on a remote server(Inherits the FastAGI)
+■Fast Database Connect(Your can Hook database connect in child process)
+
+
+Installs
+----
+
+please access http://www.freeiris.org/agispeedy
+
+for install and all docs.
+
+sun bing <hoowa.sun@freeiris.org>

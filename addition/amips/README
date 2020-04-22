@@ -1,0 +1,23 @@
+************************************************************************
+*                                                                      *
+*                  Welcome to AMI ProxyServer Project                  *
+*                                                                      *
+************************************************************************
+
+
+
+About
+-----
+
+AMIPS (AMI ProxyServer) is AMI ProxyServer is an Manageability, 
+reliability and fast proxy server of Asterisk Manager Interface, written 
+by Pure Perl. 
+
+Installs
+----
+
+please access http://www.freeiris.org/amips
+
+for install and all docs.
+
+sun bing <hoowa.sun@freeiris.org>
