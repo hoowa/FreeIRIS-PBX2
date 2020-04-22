@@ -1,0 +1,1 @@
+mkisofs -V Freeiris2 -R -J -T -r -l -d -allow-multidot -allow-leading-dots -no-bak -o ../freeiris2-new.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table .

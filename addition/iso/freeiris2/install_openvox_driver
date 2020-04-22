@@ -1,0 +1,17 @@
+#!/bin/sh
+
+wget http://downloads.openvox.cn/pub/misc/freeiris/Freeiris2_A800_A1200_DE115_card_setup.sh 
+
+if [ $? -ne 0 ]
+then
+	echo
+        echo
+        echo "Sorry, can't download the install script, please check your network!!!"
+        exit 1
+else
+        echo "download is complete"
+	echo "Now begin install the openvox card driver"
+	chmod 777 Freeiris2_A800_A1200_DE115_card_setup.sh
+	./Freeiris2_A800_A1200_DE115_card_setup.sh
+fi
+

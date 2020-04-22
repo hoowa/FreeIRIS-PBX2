@@ -1,0 +1,8 @@
+F .DISCINFO;1                                                                                                                                                                                                     	.discinfo
+F .TREEINFO;1                                                                                                                                                                                                     	.treeinfo
+D CENTOS                                                                                                                                                                                                          	CentOS
+D FREEIRIS2                                                                                                                                                                                                       	FreeIris2
+D IMAGES                                                                                                                                                                                                          	images
+D ISOLINUX                                                                                                                                                                                                        	isolinux
+F KS.CFG;1                                                                                                                                                                                                        	ks.cfg
+D REPODATA                                                                                                                                                                                                        	repodata

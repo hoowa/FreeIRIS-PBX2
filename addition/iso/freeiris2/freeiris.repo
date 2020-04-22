@@ -1,0 +1,28 @@
+[asterisk-tested]
+name=CentOS-$releasever - Asterisk - Tested
+baseurl=http://packages.asterisk.org/centos/$releasever/tested/$basearch/
+enabled=0
+gpgcheck=0
+#gpgkey=http://packages.asterisk.org/RPM-GPG-KEY-Digium
+
+[asterisk-current]
+name=CentOS-$releasever - Asterisk - Current
+baseurl=http://packages.asterisk.org/centos/$releasever/current/$basearch/
+enabled=1
+gpgcheck=0
+#gpgkey=http://packages.asterisk.org/RPM-GPG-KEY-Digium
+
+[digium-tested]
+name=CentOS-$releasever - Digium - Tested
+baseurl=http://packages.digium.com/centos/$releasever/tested/$basearch/
+enabled=0
+gpgcheck=0
+#gpgkey=http://packages.digium.com/RPM-GPG-KEY-Digium
+
+[digium-current]
+name=CentOS-$releasever - Digium - Current
+baseurl=http://packages.digium.com/centos/$releasever/current/$basearch/
+enabled=1
+gpgcheck=0
+#gpgkey=http://packages.digium.com/RPM-GPG-KEY-Digium
+
